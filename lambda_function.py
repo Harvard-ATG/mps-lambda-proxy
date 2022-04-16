@@ -10,10 +10,13 @@ else:
     logging.basicConfig(level=logging.INFO)
 
 def lambda_handler(event, context) -> dict:
-    path = event.get("rawPath")
     # "/<environment>/<action>" eg /prod/ingest
+    path = event.get("rawPath").lstrip("/").rstrip("/")
     ENVIRONMENTS = ["dev", "qa", "prod"]
-    lts_env, action = path.lstrip("/").split("/")
+    if "jobstatus" in path:
+        lts_env, action, job_id = path.split("/")
+    else:
+        lts_env, action = path.split("/")
     if(lts_env not in ENVIRONMENTS):
         msg = f"Invalid environment {lts_env}"
         logging.error(msg)
@@ -25,7 +28,7 @@ def lambda_handler(event, context) -> dict:
     if action == "ingest":
         return ingest(event, lts_env=lts_env)
     elif action == "jobstatus":
-        return jobstatus(event, lts_env=lts_env)
+        return jobstatus(event, lts_env=lts_env, job_id=job_id)
     else:
         msg = f"Error, invalid endpoint {path}"
         logging.critical(msg)
@@ -60,7 +63,7 @@ def ingest(event, lts_env: str):
         "body": r.json()
     }
 
-def jobstatus(event, lts_env: str):
+def jobstatus(event, lts_env: str, job_id: str):
     ENDPOINTS = {
         "dev": "https://mps-admin-dev.lib.harvard.edu/admin/ingest/jobstatus",
         "qa": "https://mps-admin-qa.lib.harvard.edu/admin/ingest/jobstatus",
