@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# AWS specific
+artifact.zip
+artifact/
+package/
+upload.zip
+mps_iiif_lambda_proxy/proxy.py.bak
