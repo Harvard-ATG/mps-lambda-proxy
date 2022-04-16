@@ -1,9 +1,8 @@
-from flask_lambda import FlaskLambda
-from flask import request
+from flask import Flask, request
 import requests
 import logging
 
-app = FlaskLambda(__name__)
+app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 
 @app.route("/ingest", methods=["POST"])

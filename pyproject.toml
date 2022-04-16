@@ -12,7 +12,6 @@ zappa = "^0.51.0"
 flask = "^1.1.1"
 MarkupSafe = "2.0.1"
 pyOpenSSL = "^22.0.0"
-flask-lambda = "^0.0.4"
 
 [tool.poetry.dev-dependencies]
 
