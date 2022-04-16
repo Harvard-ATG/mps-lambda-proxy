@@ -8,10 +8,6 @@ license = "Apache 2"
 [tool.poetry.dependencies]
 python = "^3.8"
 requests = "^2.23.0"
-zappa = "^0.51.0"
-flask = "^1.1.1"
-MarkupSafe = "2.0.1"
-pyOpenSSL = "^22.0.0"
 
 [tool.poetry.dev-dependencies]
 

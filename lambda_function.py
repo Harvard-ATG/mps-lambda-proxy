@@ -10,10 +10,7 @@ else:
     logging.basicConfig(level=logging.INFO)
 
 def lambda_handler(event, context):
-    print(event)
-    print(context)
     path = event.get("rawPath")
-    print(path)
     if path == "/ingest":
         return ingest(event)
     elif path == "/jobstatus":
@@ -21,7 +18,10 @@ def lambda_handler(event, context):
     else:
         msg = "Error, invalid endpoint"
         logging.critical(msg)
-        return(msg)
+        return {
+            "body": msg,
+            "statusCode": 403
+        }
 
 def ingest(event):
     VALID_ENDPOINTS=[
@@ -58,25 +58,17 @@ def jobstatus(event):
         "https://mps-admin-prod.lib.harvard.edu/admin/ingest/jobstatus"
     ]
     logging.info("Proxy server received job status request")
-    print("Proxy server received job status request")
     try:
         url = event.get("queryStringParameters").get("job_url")
-        print(url)
         valid_endpoint = url.startswith(tuple(VALID_ENDPOINTS))
-        print(valid_endpoint)
         if valid_endpoint:
             r = requests.get(url)
             logging.info(r.json())
-            print(r.json())
-            print(r.headers.items())
-            print(dict(r.headers.items()))
             res = {
                 "statusCode": r.status_code,
                 "headers": dict(r.headers.items()),
                 "body": r.json()
             }
-            print(res)
-            print(json.dumps(res))
             return res
         else:
             msg = "Job status endpoint invalid"
