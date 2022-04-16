@@ -9,40 +9,49 @@ if logging.getLogger().hasHandlers():
 else:
     logging.basicConfig(level=logging.INFO)
 
-def lambda_handler(event, context):
+def lambda_handler(event, context) -> dict:
     path = event.get("rawPath")
-    if path == "/ingest":
-        return ingest(event)
-    elif path == "/jobstatus":
-        return jobstatus(event)
+    # "/<environment>/<action>" eg /prod/ingest
+    ENVIRONMENTS = ["dev", "qa", "prod"]
+    lts_env, action = path.lstrip("/").split("/")
+    if(lts_env not in ENVIRONMENTS):
+        msg = f"Invalid environment {lts_env}"
+        logging.error(msg)
+        return {
+            "body": msg,
+            "statusCode": 403
+        }
+
+    if action == "ingest":
+        return ingest(event, lts_env=lts_env)
+    elif action == "jobstatus":
+        return jobstatus(event, lts_env=lts_env)
     else:
-        msg = "Error, invalid endpoint"
+        msg = f"Error, invalid endpoint {path}"
         logging.critical(msg)
         return {
             "body": msg,
             "statusCode": 403
         }
 
-def ingest(event):
-    VALID_ENDPOINTS=[
-        "https://mps-admin-dev.lib.harvard.edu/admin/ingest/initialize",
-        "https://mps-admin-qa.lib.harvard.edu/admin/ingest/initialize",
-        "https://mps-admin-prod.lib.harvard.edu/admin/ingest/initialize"
-    ]
-    logging.info("Proxy server received ingest request")
+def ingest(event, lts_env: str):
+    INGEST_ENDPOINTS={
+        "dev": "https://mps-admin-dev.lib.harvard.edu/admin/ingest/initialize",
+        "qa": "https://mps-admin-qa.lib.harvard.edu/admin/ingest/initialize",
+        "prod": "https://mps-admin-prod.lib.harvard.edu/admin/ingest/initialize"
+    }
+
+    logging.info(f"Proxy server received ingest request for env {lts_env}")
     data = json.loads(event.get("body", None))
     payload = data.get("req")
-    endpoint = data.get("endpoint") 
+    endpoint = INGEST_ENDPOINTS.get(lts_env) 
     token = event.get("headers").get("Authorization")
     sourceIp = event.get("headers").get("x-forwarded-for")
 
-    if(endpoint not in VALID_ENDPOINTS):
-        logging.error(f"Invalid endpoint {endpoint}")
-        return(f"Invalid endpoint {endpoint}", 422)
     logging.info(f"Proxying ingest request for {endpoint} from {sourceIp}")
     logging.info(payload)
 
-    r = requests.post(endpoint, headers={"Authorization": token}, json=payload)
+    r = requests.post(endpoint, headers={"Authorization": token}, json=payload)  # type: ignore
     logging.info("Response from MPS")
     logging.info(r.json())
     return {
@@ -51,33 +60,30 @@ def ingest(event):
         "body": r.json()
     }
 
-def jobstatus(event):
-    VALID_ENDPOINTS=[
-        "https://mps-admin-dev.lib.harvard.edu/admin/ingest/jobstatus",
-        "https://mps-admin-qa.lib.harvard.edu/admin/ingest/jobstatus",
-        "https://mps-admin-prod.lib.harvard.edu/admin/ingest/jobstatus"
-    ]
-    logging.info("Proxy server received job status request")
+def jobstatus(event, lts_env: str):
+    ENDPOINTS = {
+        "dev": "https://mps-admin-dev.lib.harvard.edu/admin/ingest/jobstatus",
+        "qa": "https://mps-admin-qa.lib.harvard.edu/admin/ingest/jobstatus",
+        "prod": "https://mps-admin-prod.lib.harvard.edu/admin/ingest/jobstatus"
+    }
+    logging.info(f"Proxy server received job status request from f{lts_env}")
     try:
-        url = event.get("queryStringParameters").get("job_url")
-        valid_endpoint = url.startswith(tuple(VALID_ENDPOINTS))
-        if valid_endpoint:
-            r = requests.get(url)
-            logging.info(r.json())
-            res = {
-                "statusCode": r.status_code,
-                "headers": dict(r.headers.items()),
-                "body": r.json()
-            }
-            return res
-        else:
-            msg = "Job status endpoint invalid"
-            logging.error(msg)
-            return(msg)
+        job_id = event.get("queryStringParameters").get("job_id")
+        endpoint = ENDPOINTS.get(lts_env)
+        url = f"{endpoint}/{job_id}"
+        r = requests.get(url)
+        logging.info(r.json())
+        res = {
+            "statusCode": r.status_code,
+            "headers": dict(r.headers.items()),
+            "body": r.json()
+        }
+        return res
     except Exception as e:
-        logging.error("Job status URL not found or invalid")
+        msg = "Job ID param or endpoint not found or invalid. Is job_id valid?"
+        logging.error(msg)
         logging.error(e)
         return {
-            "body": "Error. Did you provide a valid job_url URL parameter?",
+            "body": msg,
             "statusCode": 403
         }
