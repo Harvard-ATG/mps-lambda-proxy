@@ -36,6 +36,25 @@ Resources:
               - date
               - content-type
             MaxAge: 30
+      Policies:
+        - Statement:
+          - Sid: AllowVPCAttachment
+            Effect: Allow
+            Action:
+            - ec2:DescribeNetworkInterfaces
+            - ec2:CreateNetworkInterface
+            - ec2:DeleteNetworkInterface
+            - ec2:DescribeInstances
+            - ec2:AttachNetworkInterface
+            Resource: '*'
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-05fa1e172b3da9115
+        SubnetIds:
+          - subnet-00b9cffed05f69a59
+          - subnet-76532401
+          - subnet-e176cbca
+
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
