@@ -25,7 +25,7 @@ def lambda_handler(event: dict, context: object) -> dict:
             "statusCode": 403
         }
 
-    if action == "ingest":
+    if action == "initialize":
         return ingest(event, lts_env=lts_env)
     elif action == "jobstatus":
         return jobstatus(event, lts_env=lts_env, job_id=job_id)
@@ -74,6 +74,7 @@ def jobstatus(event, lts_env: str, job_id: str):
     try:
         endpoint = ENDPOINTS.get(lts_env)
         url = f"{endpoint}/{job_id}"
+        logging.info(f"Getting {url}")
         r = requests.get(url)
         res = {
             "statusCode": r.status_code,
