@@ -9,7 +9,7 @@ if logging.getLogger().hasHandlers():
 else:
     logging.basicConfig(level=logging.INFO)
 
-def lambda_handler(event, context) -> dict:
+def lambda_handler(event: dict, context: object) -> dict:
     # "/<environment>/<action>" eg /prod/ingest
     path = event.get("rawPath").lstrip("/").rstrip("/")
     ENVIRONMENTS = ["dev", "qa", "prod"]
@@ -55,13 +55,14 @@ def ingest(event, lts_env: str):
     logging.info(payload)
 
     r = requests.post(endpoint, headers={"Authorization": token}, json=payload)  # type: ignore
-    logging.info("Response from MPS")
-    logging.info(r.json())
-    return {
+    res = {
         "statusCode": r.status_code,
         "headers": r.headers.items(),
         "body": r.json()
     }
+    logging.info("Response from MPS")
+    logging.info(res)
+    return res
 
 def jobstatus(event, lts_env: str, job_id: str):
     ENDPOINTS = {
@@ -69,18 +70,17 @@ def jobstatus(event, lts_env: str, job_id: str):
         "qa": "https://mps-admin-qa.lib.harvard.edu/admin/ingest/jobstatus",
         "prod": "https://mps-admin-prod.lib.harvard.edu/admin/ingest/jobstatus"
     }
-    logging.info(f"Proxy server received job status request from f{lts_env}")
+    logging.info(f"Proxy server received job status request from {lts_env} for job_id {job_id}")
     try:
-        job_id = event.get("queryStringParameters").get("job_id")
         endpoint = ENDPOINTS.get(lts_env)
         url = f"{endpoint}/{job_id}"
         r = requests.get(url)
-        logging.info(r.json())
         res = {
             "statusCode": r.status_code,
             "headers": dict(r.headers.items()),
             "body": r.json()
         }
+        logging.info(res)
         return res
     except Exception as e:
         msg = "Job ID param or endpoint not found or invalid. Is job_id valid?"
