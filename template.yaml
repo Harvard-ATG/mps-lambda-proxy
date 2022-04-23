@@ -19,6 +19,23 @@ Resources:
       Runtime: python3.9
       Architectures:
         - x86_64
+      FunctionUrlConfig:
+        AuthType: AWS_IAM
+        Cors:
+            AllowOrigins:
+              - "*"
+            AllowCredentials: false
+            AllowMethods:
+              - GET
+              - POST
+            AllowHeaders:
+              - x-amzn-header
+              - authorization
+              - content-type
+            ExposeHeaders:
+              - date
+              - content-type
+            MaxAge: 30
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -30,3 +47,7 @@ Outputs:
   MpsProxyFunctionIamRole:
     Description: "Implicit IAM Role created for MPS Proxy function"
     Value: !GetAtt MpsProxyFunctionRole.Arn
+  MpsProxyFunctionUrlEndpoint:
+      Description: "MPS Proxy Function URL Endpoint"
+      Value:
+        Fn::GetAtt: MpsProxyFunctionUrl.FunctionUrl
