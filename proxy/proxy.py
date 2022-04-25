@@ -1,6 +1,7 @@
 import requests
 import logging
 import json
+import base64
 
 if logging.getLogger().hasHandlers():
     # The Lambda environment pre-configures a handler logging to stderr. If a handler is already configured,
@@ -11,7 +12,10 @@ else:
 
 def lambda_handler(event: dict, context: object) -> dict:
     # "/<environment>/<action>" eg /prod/ingest
+    logging.info(event)
+    logging.info(context)
     path = event.get("rawPath").lstrip("/").rstrip("/")
+    logging.info(path)
     ENVIRONMENTS = ["dev", "qa", "prod"]
     if "jobstatus" in path:
         lts_env, action, job_id = path.split("/")
@@ -45,19 +49,31 @@ def ingest(event, lts_env: str):
     }
 
     logging.info(f"Proxy server received ingest request for env {lts_env}")
-    data = json.loads(event.get("body", None))
-    payload = data.get("req")
+    
+    body = event.get("body")
+    logging.info(body)
+    content_type = event["headers"]["content-type"]
+    logging.info(content_type)
+    body_decoded = base64.b64decode(body)
+    logging.info(body_decoded)
+    
+    # data = json.loads(event.get("body", None))
+    # payload = data.get("req")
+    body = json.loads(body_decoded)
+    token = body.get("token")
+    payload = body.get("payload")
     endpoint = INGEST_ENDPOINTS.get(lts_env) 
-    token = event.get("headers").get("Authorization")
+    # token = event.get("headers").get("Authorization")
     sourceIp = event.get("headers").get("x-forwarded-for")
 
     logging.info(f"Proxying ingest request for {endpoint} from {sourceIp}")
     logging.info(payload)
+    logging.info(token)
 
     r = requests.post(endpoint, headers={"Authorization": token}, json=payload)  # type: ignore
     res = {
         "statusCode": r.status_code,
-        "headers": r.headers.items(),
+        "headers": dict(r.headers.items()),
         "body": r.json()
     }
     logging.info("Response from MPS")
@@ -76,6 +92,9 @@ def jobstatus(event, lts_env: str, job_id: str):
         url = f"{endpoint}/{job_id}"
         logging.info(f"Getting {url}")
         r = requests.get(url)
+        logging.info(r)
+        logging.info(r.status_code)
+        logging.info(r.reason)
         res = {
             "statusCode": r.status_code,
             "headers": dict(r.headers.items()),
