@@ -13,9 +13,7 @@ else:
 def lambda_handler(event: dict, context: object) -> dict:
     # "/<environment>/<action>" eg /prod/ingest
     logging.info(event)
-    logging.info(context)
     path = event.get("rawPath").lstrip("/").rstrip("/")
-    logging.info(path)
     ENVIRONMENTS = ["dev", "qa", "prod"]
     if "jobstatus" in path:
         lts_env, action, job_id = path.split("/")
@@ -51,24 +49,16 @@ def ingest(event, lts_env: str):
     logging.info(f"Proxy server received ingest request for env {lts_env}")
     
     body = event.get("body")
-    logging.info(body)
-    content_type = event["headers"]["content-type"]
-    logging.info(content_type)
     body_decoded = base64.b64decode(body)
-    logging.info(body_decoded)
-    
-    # data = json.loads(event.get("body", None))
-    # payload = data.get("req")
-    body = json.loads(body_decoded)
-    token = body.get("token")
-    payload = body.get("payload")
+    data = json.loads(body_decoded)
+
+    token = data.get("token")
+    payload = data.get("payload")
     endpoint = INGEST_ENDPOINTS.get(lts_env) 
-    # token = event.get("headers").get("Authorization")
+    # token = event.get("headers").get("Authorization") # this no longer works, auth headers are overwritten by AWS signing request
     sourceIp = event.get("headers").get("x-forwarded-for")
 
     logging.info(f"Proxying ingest request for {endpoint} from {sourceIp}")
-    logging.info(payload)
-    logging.info(token)
 
     r = requests.post(endpoint, headers={"Authorization": token}, json=payload)  # type: ignore
     res = {
@@ -76,8 +66,6 @@ def ingest(event, lts_env: str):
         "headers": dict(r.headers.items()),
         "body": r.json()
     }
-    logging.info("Response from MPS")
-    logging.info(res)
     return res
 
 def jobstatus(event, lts_env: str, job_id: str):
@@ -90,11 +78,7 @@ def jobstatus(event, lts_env: str, job_id: str):
     try:
         endpoint = ENDPOINTS.get(lts_env)
         url = f"{endpoint}/{job_id}"
-        logging.info(f"Getting {url}")
         r = requests.get(url)
-        logging.info(r)
-        logging.info(r.status_code)
-        logging.info(r.reason)
         res = {
             "statusCode": r.status_code,
             "headers": dict(r.headers.items()),
