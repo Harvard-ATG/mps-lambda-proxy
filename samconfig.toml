@@ -3,10 +3,23 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "mps-lambda-proxy"
+parameter_overrides = "EnvironmentType=\"dev\""
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1glfdsfwi55v5"
 s3_prefix = "mps-lambda-proxy"
 region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
 disable_rollback = true
+image_repositories = []
+
+[prod]
+[prod.deploy]
+[prod.deploy.parameters]
+stack_name = "mps-lambda-proxy-prod"
+parameter_overrides = "EnvironmentType=\"prod\""
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1py4cskinwrhd"
+s3_prefix = "mps-lambda-proxy-prod"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
 image_repositories = []
