@@ -10,6 +10,32 @@ Globals:
   Function:
     Timeout: 3
 
+Parameters: 
+  EnvironmentType: 
+    Description: The environment type
+    Type: String
+    Default: dev
+    AllowedValues: 
+      - prod
+      - dev
+    ConstraintDescription: must be a prod or dev
+
+Mappings:
+  Environment:
+    dev:
+      SecurityGroupId:
+        - sg-05fa1e172b3da9115
+      Subnets:
+        - subnet-00b9cffed05f69a59
+        - subnet-76532401
+        - subnet-e176cbca
+    prod:
+      SecurityGroupId:
+        - sg-06aa30866f9360af9
+      Subnets:
+        - subnet-6440273d
+        - subnet-275a1950
+
 Resources:
   MpsProxyFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -46,12 +72,8 @@ Resources:
             - ec2:AttachNetworkInterface
             Resource: '*'
       VpcConfig:
-        SecurityGroupIds:
-          - sg-05fa1e172b3da9115
-        SubnetIds:
-          - subnet-00b9cffed05f69a59
-          - subnet-76532401
-          - subnet-e176cbca
+        SecurityGroupIds: !FindInMap [Environment, !Ref EnvironmentType, SecurityGroupId]
+        SubnetIds: !FindInMap [Environment, !Ref EnvironmentType, Subnets]
 
 
 Outputs:
